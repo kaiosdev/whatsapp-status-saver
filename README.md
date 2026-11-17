@@ -1,186 +1,128 @@
-# WhatsApp Status Saver - Android
+# WhatsApp Status Saver
 
-Aplicativo React Native para baixar status do WhatsApp no Android 11+
+Aplicativo Android feito com **React Native + Expo** para ver e salvar na galeria os status do WhatsApp que você já visualizou.
 
-## 🚀 Recursos
+> Este projeto não é afiliado ao WhatsApp Inc. Respeite a privacidade das pessoas ao salvar os status delas.
 
-- ✅ Salvar fotos e vídeos dos status do WhatsApp
-- ✅ Suporte para WhatsApp e WhatsApp Business
-- ✅ Interface intuitiva e fácil de usar
-- ✅ Visualização de arquivos salvos
-- ✅ Compartilhamento de status
-- ✅ Exclusão de arquivos salvos
-- ✅ Compatível com Android 11 e superior
+## Recursos
 
-## 📋 Pré-requisitos
+- Lista os status do WhatsApp (e WhatsApp Business) em **duas colunas: Imagens | Vídeos**
+- Mídias ordenadas **das mais recentes para as mais antigas**
+- Pede permissão da pasta **uma única vez** (a escolha fica salva entre as aberturas do app)
+- Salva o status na galeria (álbum "Status WhatsApp") com um toque
+- Aba "Salvos" com as mesmas colunas, além de compartilhar e excluir
+- Compatível com Android 11 ou superior
 
-- Node.js (v14 ou superior)
-- npm ou yarn
-- Expo CLI: `npm install -g expo-cli`
-- Android Studio (para emulador) ou dispositivo Android físico
-- Expo Go app instalado no dispositivo (disponível na Play Store)
+## Como o app funciona
 
-## 🔧 Instalação
+### Por que é preciso escolher uma pasta?
 
-1. **Clone ou extraia o projeto:**
-```bash
-cd whatsapp-status-saver
-```
+A partir do Android 11, nenhum app pode ler `Android/media/com.whatsapp/...` diretamente. A única forma sem privilégios especiais é o **Storage Access Framework (SAF)**: o app abre o seletor de pastas do sistema, o usuário escolhe a pasta `.Statuses` e o Android entrega uma permissão sobre essa pasta.
 
-2. **Instale as dependências:**
-```bash
-npm install
-```
-ou
-```bash
-yarn install
-```
+### Permissão persistente (sem pedir toda vez)
 
-3. **Inicie o projeto:**
-```bash
-npm start
-```
-ou
-```bash
-expo start
-```
+1. Na primeira vez, `StorageAccessFramework.requestDirectoryPermissionsAsync` abre o seletor. O Expo já pede ao Android para **manter** essa permissão (`takePersistableUriPermission`).
+2. A URI da pasta é guardada no `AsyncStorage` (`@whatsapp_status_dir_uri`).
+3. Nas próximas aberturas o app lê essa URI e já lista a pasta, sem perguntar nada.
+4. A permissão só é descartada se o Android realmente a revogar (erro de leitura por permissão). Erros passageiros mostram "Tentar novamente" e **mantêm** a permissão salva.
 
-4. **Execute no dispositivo:**
-   - Abra o app Expo Go no seu Android
-   - Escaneie o QR code exibido no terminal ou navegador
-   - Aguarde o app carregar
+### Ordenação por data
 
-## 📱 Como Usar
+O Android **não informa a data de modificação** dos arquivos lidos via SAF, e os nomes dos status do WhatsApp são códigos aleatórios (não têm data). Por isso o app registra o momento em que viu cada arquivo pela primeira vez e ordena por esse registro (`@whatsapp_status_first_seen`). Registros de status que já sumiram (eles expiram em 24 h) são removidos automaticamente.
 
-1. **Primeira execução:**
-   - O app solicitará permissão para acessar mídia e armazenamento
-   - Conceda todas as permissões solicitadas
+Consequência: status que aparecem na mesma abertura do app ficam agrupados e, entre eles, a ordem é a da listagem do Android. Quanto mais seguido você abre o app, mais fiel é a ordem. Na aba "Salvos" a ordem é exata, pois usa a data de criação da galeria.
 
-2. **Baixar status:**
-   - Abra o WhatsApp e visualize os status que deseja salvar
-   - Volte para o Status Saver
-   - Na aba "Status", você verá todos os status visualizados recentemente
-   - Toque no status para salvá-lo automaticamente na galeria
+### Fluxo ao salvar um status
 
-3. **Gerenciar salvos:**
-   - Acesse a aba "Salvos" para ver todos os arquivos baixados
-   - Toque no botão compartilhar para enviar o status
-   - Toque no botão lixeira para excluir o arquivo
+1. Toque na miniatura → `ensureMediaPermission()` garante a permissão da galeria.
+2. O arquivo é copiado da pasta SAF para o cache do app (`FileSystem.copyAsync`).
+3. `MediaLibrary.createAssetAsync` cria o item na galeria e ele é colocado no álbum "Status WhatsApp".
+4. O arquivo temporário é apagado.
 
-## 🏗️ Compilar APK
-
-### Usando EAS Build (Recomendado):
-
-1. **Instale EAS CLI:**
-```bash
-npm install -g eas-cli
-```
-
-2. **Configure o projeto:**
-```bash
-eas build:configure
-```
-
-3. **Crie a build Android:**
-```bash
-eas build --platform android --profile production
-```
-
-### Usando Expo Build (Alternativa):
-
-```bash
-expo build:android
-```
-
-## ⚙️ Configurações Importantes
-
-### Permissões Android (app.json)
-
-O app requer as seguintes permissões:
-- `READ_EXTERNAL_STORAGE` - Ler status do WhatsApp
-- `WRITE_EXTERNAL_STORAGE` - Salvar arquivos
-- `MANAGE_EXTERNAL_STORAGE` - Acesso completo (Android 11+)
-- `READ_MEDIA_IMAGES` - Ler imagens (Android 13+)
-- `READ_MEDIA_VIDEO` - Ler vídeos (Android 13+)
-
-### Caminhos do WhatsApp (Android 11+)
-
-- WhatsApp Normal: `/storage/emulated/0/Android/media/com.whatsapp/WhatsApp/Media/.Statuses`
-- WhatsApp Business: `/storage/emulated/0/Android/media/com.whatsapp.w4b/WhatsApp Business/Media/.Statuses`
-
-## 🛠️ Estrutura do Projeto
+## Estrutura do projeto
 
 ```
 whatsapp-status-saver/
-├── App.js                          # Componente principal
-├── app.json                        # Configurações Expo
-├── package.json                    # Dependências
-├── babel.config.js                 # Configuração Babel
+├── App.js                      # Navegação em abas (Status, Salvos, Sobre) + ErrorBoundary
+├── app.json                    # Configuração do Expo (nome, ícones, permissões)
+├── eas.json                    # Perfis de build (EAS)
+├── package.json
+├── INSTALACAO.md               # Guia detalhado de instalação
 └── src/
-    └── screens/
-        ├── StatusScreen.js         # Tela de status do WhatsApp
-        ├── SavedScreen.js          # Tela de arquivos salvos
-        └── AboutScreen.js          # Tela sobre o app
+    ├── constants.js            # Chaves do AsyncStorage, nome do álbum, extensões, cores
+    ├── screens/
+    │   ├── StatusScreen.js     # Lista os status da pasta autorizada e salva na galeria
+    │   ├── SavedScreen.js      # Lista o álbum "Status WhatsApp"; compartilhar e excluir
+    │   └── AboutScreen.js      # Instruções e informações do app
+    ├── components/
+    │   ├── MediaColumns.js     # Layout de duas colunas (Imagens | Vídeos), rolagem independente
+    │   ├── MediaThumb.js       # Miniatura (foto/vídeo) com ícone de play e fallback se falhar
+    │   └── ErrorBoundary.js    # Evita que um erro de tela feche o app inteiro
+    ├── services/
+    │   ├── statusService.js    # SAF: escolher/guardar pasta, listar mídias, ordenar por recência
+    │   └── permissions.js      # Permissão da galeria (um pedido por vez)
+    └── utils/
+        └── media.js            # Nome/tipo do arquivo, ordenação e separação imagem × vídeo
 ```
 
-## 🐛 Solução de Problemas
+**Divisão de responsabilidades:** as telas cuidam do estado e da interface; `services/` fala com o Android (permissões e arquivos); `utils/` tem funções puras; `components/` são peças de interface reutilizadas pelas duas telas.
 
-### Status não aparecem:
+## Correções desta versão
 
-1. Certifique-se de ter visualizado os status no WhatsApp primeiro
-2. Verifique se todas as permissões foram concedidas
-3. Tente atualizar a lista puxando para baixo
-4. Reinicie o aplicativo
+| Problema | Causa | Correção |
+| --- | --- | --- |
+| Pedia a pasta de novo a cada abertura | O app validava a pasta salva com `getInfoAsync`, que sempre responde "não existe" para pastas SAF, e então apagava a permissão | Não valida mais assim; usa a URI salva e só a descarta se o Android revogar a permissão |
+| App fechando de vez em quando | Pedidos de permissão simultâneos (App.js + telas); fotos carregadas em tamanho cheio; toques repetidos ao salvar; respostas antigas chegando depois da tela mudar; nome de arquivo inválido (URI codificada) | Pedido de permissão único e reaproveitado, `resizeMethod="resize"`, listas virtualizadas, trava de toque duplo, descarte de respostas antigas, nome de arquivo tratado e `ErrorBoundary` |
+| Spinner eterno se a galeria fosse negada | O carregamento dependia da permissão da galeria | A galeria só é pedida na hora de salvar |
+| "Salvos" mostrava no máximo 20 itens | `getAssetsAsync` devolve 20 por padrão | Busca em páginas até o fim |
+| Botão compartilhar enviava só texto | `Share.share({ url })` ignora `url` no Android | Usa `expo-sharing` com o arquivo de verdade |
 
-### Erro ao salvar:
+## Como rodar
 
-1. Verifique as permissões de armazenamento nas configurações do Android
-2. Certifique-se de ter espaço disponível no dispositivo
-3. Tente conceder permissão "Gerenciar todos os arquivos" manualmente nas configurações
+Requisitos: Node.js 18+, um celular Android com o app **Expo Go** (ou emulador).
 
-### App não carrega no Expo Go:
+```bash
+npm install
+npx expo start
+```
 
-1. Certifique-se de que o celular e o computador estão na mesma rede
-2. Tente usar conexão via USB com `adb reverse`
-3. Limpe o cache: `expo start -c`
+Escaneie o QR code com o Expo Go. Para limpar o cache: `npx expo start -c`.
 
-## 📝 Notas Importantes
+### Primeiro uso
 
-- Este app não é afiliado ao WhatsApp Inc.
-- Respeite a privacidade dos outros ao salvar status
-- Os arquivos são salvos localmente no dispositivo
-- Compatível apenas com Android (iOS tem restrições diferentes)
+1. Abra o app e toque em **Permitir Acesso**.
+2. No seletor, navegue até `Android > media > com.whatsapp > WhatsApp > Media > .Statuses` (WhatsApp Business: `com.whatsapp.w4b > WhatsApp Business > Media > .Statuses`).
+3. Toque em **Usar esta pasta** e confirme. Isso só é necessário uma vez.
+4. Veja os status no WhatsApp, volte ao app e toque na miniatura para salvar.
 
-## 🔒 Privacidade
+## Gerar o APK (EAS Build)
 
-- O app não coleta dados dos usuários
-- Não há conexão com servidores externos
-- Todos os arquivos são armazenados localmente
-- Nenhuma informação é compartilhada
+```bash
+npm install -g eas-cli
+eas login
+eas build --platform android --profile preview
+```
 
-## 📄 Licença
+## Solução de problemas
 
-Este projeto é de código aberto e está disponível sob a licença MIT.
+- **Nenhum status aparece:** veja os status no WhatsApp antes, puxe a lista para atualizar e confira se a pasta escolhida é a `.Statuses`. Use o ícone de pasta no topo para trocar.
+- **Erro ao salvar:** confirme a permissão de fotos/vídeos do app nas configurações do Android e se há espaço no aparelho.
+- **Pediu a pasta de novo:** acontece se o Android revogar a permissão (por exemplo, ao limpar os dados do app ou do Expo Go). Escolha a pasta novamente.
+- **Expo Go não carrega:** celular e computador devem estar na mesma rede; tente `npx expo start --tunnel`.
 
-## 👨‍💻 Desenvolvimento
+## Limitações conhecidas
 
-Desenvolvido com React Native e Expo.
+- A ordem dos status da aba "Status" é por "primeira vez que o app viu o arquivo" (ver acima). Para usar a data real do arquivo seria necessário um módulo nativo, o que exigiria sair do Expo Go e usar uma build de desenvolvimento.
+- A miniatura dos vídeos depende do Android conseguir gerar um quadro do arquivo; se não conseguir, aparece um ícone no lugar.
 
-### Principais bibliotecas:
+## Principais bibliotecas
 
-- React Navigation - Navegação entre telas
-- Expo File System - Manipulação de arquivos
-- Expo Media Library - Acesso à galeria
-- Ionicons - Ícones do app
+React Navigation (abas), Expo File System (SAF e cópia de arquivos), Expo Media Library (galeria), Expo Sharing (compartilhar), AsyncStorage (guardar a pasta e a ordem), Ionicons (ícones).
 
-## 🤝 Contribuições
+## Privacidade
 
-Contribuições são bem-vindas! Sinta-se à vontade para abrir issues ou pull requests.
+O app não coleta dados nem se conecta a servidores. Tudo fica no aparelho.
 
-## ⭐ Suporte
+## Licença
 
-Se você achou este projeto útil, considere dar uma estrela!
-
----
-
-Desenvolvido com ❤️ usando React Native + Expo
+MIT.
