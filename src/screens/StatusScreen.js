@@ -5,7 +5,7 @@ import * as MediaLibrary from 'expo-media-library';
 import { Ionicons } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native';
 
-import MediaColumns from '../components/MediaColumns';
+import MediaTabs from '../components/MediaTabs';
 import MediaThumb from '../components/MediaThumb';
 import { ALBUM_NAME, COLORS } from '../constants';
 import { ensureMediaPermission } from '../services/permissions';
@@ -239,7 +239,7 @@ export default function StatusScreen() {
           <Ionicons name="folder-open-outline" size={22} color={COLORS.primary} />
         </TouchableOpacity>
       </View>
-      <MediaColumns
+      <MediaTabs
         images={images}
         videos={videos}
         renderItem={renderItem}

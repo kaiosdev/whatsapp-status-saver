@@ -6,11 +6,11 @@ Aplicativo Android feito com **React Native + Expo** para ver e salvar na galeri
 
 ## Recursos
 
-- Lista os status do WhatsApp (e WhatsApp Business) em **duas colunas: Imagens | Vídeos**
+- Lista os status do WhatsApp (e WhatsApp Business) em **abas separadas: Imagens | Vídeos**
 - Mídias ordenadas **das mais recentes para as mais antigas**
 - Pede permissão da pasta **uma única vez** (a escolha fica salva entre as aberturas do app)
 - Salva o status na galeria (álbum "Status WhatsApp") com um toque
-- Aba "Salvos" com as mesmas colunas, além de compartilhar e excluir
+- Aba "Salvos" com as mesmas abas, além de compartilhar e excluir
 - Compatível com Android 11 ou superior
 
 ## Como o app funciona
@@ -55,7 +55,7 @@ whatsapp-status-saver/
     │   ├── SavedScreen.js      # Lista o álbum "Status WhatsApp"; compartilhar e excluir
     │   └── AboutScreen.js      # Instruções e informações do app
     ├── components/
-    │   ├── MediaColumns.js     # Layout de duas colunas (Imagens | Vídeos), rolagem independente
+    │   ├── MediaTabs.js        # Abas Imagens | Vídeos, cada uma em grade de 2 colunas
     │   ├── MediaThumb.js       # Miniatura (foto/vídeo) com ícone de play e fallback se falhar
     │   └── ErrorBoundary.js    # Evita que um erro de tela feche o app inteiro
     ├── services/

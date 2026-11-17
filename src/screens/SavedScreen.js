@@ -6,7 +6,7 @@ import * as Sharing from 'expo-sharing';
 import { Ionicons } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native';
 
-import MediaColumns from '../components/MediaColumns';
+import MediaTabs from '../components/MediaTabs';
 import MediaThumb from '../components/MediaThumb';
 import { ALBUM_NAME, COLORS } from '../constants';
 import { ensureMediaPermission } from '../services/permissions';
@@ -184,7 +184,7 @@ export default function SavedScreen() {
       <View style={styles.header}>
         <Text style={styles.headerText}>{items.length} arquivos salvos · mais recentes primeiro</Text>
       </View>
-      <MediaColumns
+      <MediaTabs
         images={images}
         videos={videos}
         renderItem={renderItem}
